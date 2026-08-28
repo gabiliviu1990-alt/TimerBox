@@ -1,4 +1,4 @@
-const CACHE = "runde-box-v28";
+const CACHE = "runde-box-v29";
 const ASSETS = [
   "./index.html",
   "./manifest.json",

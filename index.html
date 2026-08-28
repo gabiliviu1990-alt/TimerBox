@@ -411,6 +411,28 @@ h1 span{ color:var(--brass); }
   transition:width .3s linear, background-color .3s ease;
 }
 #tvBarFill.rest{ background:var(--corner-red); }
+#tvControls{
+  display:flex; gap:2vw; margin-top:4vh; width:min(80vw, 700px);
+}
+#tvControls button{
+  flex:1; border:none; border-radius:16px; cursor:pointer;
+  font-family:'Anton', sans-serif; letter-spacing:.04em; text-transform:uppercase;
+  font-size:clamp(16px, 2.6vh, 26px);
+  padding:clamp(14px, 2.4vh, 24px) 10px;
+}
+#tvPauseBtn{
+  background: linear-gradient(180deg, var(--brass-bright) 0%, var(--brass) 100%);
+  color:#1A1608;
+}
+#tvPauseBtn.running{
+  background: linear-gradient(180deg, var(--corner-red-bright) 0%, var(--corner-red) 100%);
+  color:#1F0E0C;
+}
+#tvNextBtn{
+  background:var(--canvas-2); border:1px solid var(--line); color:var(--chalk-dim);
+  font-size:clamp(13px, 2vh, 20px);
+}
+#tvNextBtn:disabled{ opacity:.35; }
 </style>
 </head>
 <body>
@@ -520,6 +542,10 @@ h1 span{ color:var(--brass); }
   <div id="tvTimer">3:00</div>
   <div id="tvRoundLabel">RUNDA 1 / 3</div>
   <div id="tvBarTrack"><div id="tvBarFill"></div></div>
+  <div id="tvControls">
+    <button id="tvPauseBtn">Start</button>
+    <button id="tvNextBtn">Runda următoare</button>
+  </div>
 </div>
 
 <script>
@@ -566,6 +592,8 @@ h1 span{ color:var(--brass); }
     tvTimer: document.getElementById('tvTimer'),
     tvRoundLabel: document.getElementById('tvRoundLabel'),
     tvBarFill: document.getElementById('tvBarFill'),
+    tvPauseBtn: document.getElementById('tvPauseBtn'),
+    tvNextBtn: document.getElementById('tvNextBtn'),
     btnInstall: document.getElementById('btnInstall'),
     shareModal: document.getElementById('shareModal'),
     closeShare: document.getElementById('closeShare'),
@@ -1008,6 +1036,10 @@ h1 span{ color:var(--brass); }
     const pct = total > 0 ? Math.max(0, Math.min(100, (1 - state.remaining/total) * 100)) : 0;
     els.tvBarFill.style.width = pct + '%';
     els.tvBarFill.classList.toggle('rest', state.phase === 'rest');
+
+    els.tvPauseBtn.textContent = state.phase === 'done' ? 'Din nou' : (state.running ? 'Pauză' : (state.phase==='idle' ? 'Start' : 'Reia'));
+    els.tvPauseBtn.classList.toggle('running', state.running);
+    els.tvNextBtn.disabled = !(state.phase === 'work' || state.phase === 'rest');
   }
 
   function flashCard(kind){
@@ -1067,6 +1099,12 @@ h1 span{ color:var(--brass); }
       startPhase('work', state.round + 1);
     }
     tickHandle = requestAnimationFrame(tick);
+  }
+
+  function skipPhase(){
+    if(state.phase !== 'work' && state.phase !== 'rest') return;
+    if(tickHandle) cancelAnimationFrame(tickHandle);
+    advancePhase();
   }
 
   function start(){
@@ -1156,6 +1194,8 @@ h1 span{ color:var(--brass); }
     renderTvMode();
   };
   els.tvExit.onclick = ()=> els.tvMode.classList.remove('open');
+  els.tvPauseBtn.onclick = start;
+  els.tvNextBtn.onclick = skipPhase;
 
   /* ---- Istoric ---- */
   function loadHistory(){ return loadJSON('rundeBoxHistory', []); }
