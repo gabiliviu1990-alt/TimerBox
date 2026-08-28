@@ -361,6 +361,56 @@ h1 span{ color:var(--brass); }
   color:#1F0E0C;
   box-shadow: 0 14px 30px -12px #A63A3266, inset 0 1px 0 #ffffff30;
 }
+#tvMode{
+  display:none;
+  position:fixed; inset:0; z-index:100;
+  background:var(--canvas);
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:4vh 4vw;
+}
+#tvMode.open{ display:flex; }
+#tvExit{
+  position:absolute; top:3vh; right:3vw;
+  background:var(--canvas-2); border:1px solid var(--line); color:var(--chalk-dim);
+  font-family:'Space Mono', monospace; font-size:14px; letter-spacing:.08em; text-transform:uppercase;
+  padding:10px 16px; border-radius:20px; cursor:pointer;
+}
+#tvGymName{
+  font-family:'Space Mono', monospace; font-size:clamp(16px, 2.6vh, 30px);
+  letter-spacing:.2em; text-transform:uppercase; color:var(--brass);
+  margin-bottom:2vh; outline:none; max-width:90vw; word-break:break-word;
+}
+#tvGymName:focus{ color:var(--brass-bright); }
+#tvPhase{
+  font-family:'Space Mono', monospace; font-size:clamp(14px, 2.4vh, 26px);
+  letter-spacing:.25em; text-transform:uppercase; color:var(--chalk-dim);
+  margin-bottom:1vh;
+}
+#tvTimer{
+  font-family:'Anton', sans-serif; font-size:clamp(90px, 26vh, 320px);
+  line-height:1; color:var(--chalk); font-variant-numeric:tabular-nums;
+  margin-bottom:2vh;
+}
+#tvTimer.work{ color:var(--brass-bright); }
+#tvTimer.rest{ color:var(--corner-red-bright); }
+#tvRoundLabel{
+  font-family:'Space Mono', monospace; font-size:clamp(18px, 3.2vh, 40px);
+  letter-spacing:.15em; text-transform:uppercase; color:var(--chalk-dim);
+  margin-bottom:3vh;
+}
+#tvBarTrack{
+  width:min(80vw, 700px); height:14px; border-radius:7px;
+  background:var(--canvas-2); border:1px solid var(--line);
+  overflow:hidden;
+}
+#tvBarFill{
+  height:100%; width:0%; background:var(--brass);
+  transition:width .3s linear, background-color .3s ease;
+}
+#tvBarFill.rest{ background:var(--corner-red); }
 </style>
 </head>
 <body>
@@ -376,6 +426,7 @@ h1 span{ color:var(--brass); }
     <button id="btnHistory">Istoric</button>
     <button id="btnTheme">Temă</button>
     <button id="btnShare">Distribuie</button>
+    <button id="btnTv">Mod Sală</button>
     <button id="btnInstall" style="display:none;">Instalează</button>
   </div>
 
@@ -462,6 +513,15 @@ h1 span{ color:var(--brass); }
   </div>
 </div>
 
+<div id="tvMode">
+  <button id="tvExit">✕ Ieși din Mod Sală</button>
+  <div id="tvGymName" contenteditable="true" spellcheck="false">Numele sălii</div>
+  <div id="tvPhase">PREGĂTIT</div>
+  <div id="tvTimer">3:00</div>
+  <div id="tvRoundLabel">RUNDA 1 / 3</div>
+  <div id="tvBarTrack"><div id="tvBarFill"></div></div>
+</div>
+
 <script>
 (function(){
   function setRealVh(){
@@ -498,6 +558,14 @@ h1 span{ color:var(--brass); }
     headRounds: document.getElementById('headRounds'),
     titleUnit: document.getElementById('titleUnit'),
     btnShare: document.getElementById('btnShare'),
+    btnTv: document.getElementById('btnTv'),
+    tvMode: document.getElementById('tvMode'),
+    tvExit: document.getElementById('tvExit'),
+    tvGymName: document.getElementById('tvGymName'),
+    tvPhase: document.getElementById('tvPhase'),
+    tvTimer: document.getElementById('tvTimer'),
+    tvRoundLabel: document.getElementById('tvRoundLabel'),
+    tvBarFill: document.getElementById('tvBarFill'),
     btnInstall: document.getElementById('btnInstall'),
     shareModal: document.getElementById('shareModal'),
     closeShare: document.getElementById('closeShare'),
@@ -926,6 +994,20 @@ h1 span{ color:var(--brass); }
     [els.wheelRest, els.wheelWork, els.wheelRounds].forEach(w=> w.classList.toggle('locked', locked));
     els.warnGroup.classList.toggle('locked', locked);
     els.sportGroup.classList.toggle('locked', locked);
+
+    renderTvMode();
+  }
+
+  function renderTvMode(){
+    if(!els.tvMode.classList.contains('open')) return;
+    els.tvTimer.textContent = fmt(state.remaining);
+    els.tvTimer.className = state.phase==='work' ? 'work' : (state.phase==='rest' ? 'rest' : '');
+    els.tvPhase.textContent = state.phase==='work' ? curLabels().workBadge : (state.phase==='rest' ? 'Pauză' : (state.phase==='done' ? 'Terminat' : 'Pregătit'));
+    els.tvRoundLabel.textContent = getRoundName(state.round).toUpperCase() + ' / ' + settings.rounds;
+    const total = state.phase === 'rest' ? settings.rest : settings.work;
+    const pct = total > 0 ? Math.max(0, Math.min(100, (1 - state.remaining/total) * 100)) : 0;
+    els.tvBarFill.style.width = pct + '%';
+    els.tvBarFill.classList.toggle('rest', state.phase === 'rest');
   }
 
   function flashCard(kind){
@@ -1059,6 +1141,21 @@ h1 span{ color:var(--brass); }
       setTimeout(()=> els.copyLink.textContent = 'Copiază linkul', 1500);
     }).catch(()=>{});
   };
+
+  /* ---- Mod Sală (TV Display) ---- */
+  const savedGymName = loadJSON('rundeBoxGymName', '');
+  if(savedGymName) els.tvGymName.textContent = savedGymName;
+  els.tvGymName.addEventListener('blur', ()=>{
+    const val = els.tvGymName.textContent.trim().slice(0, 40);
+    els.tvGymName.textContent = val || 'Numele sălii';
+    saveJSON('rundeBoxGymName', val === 'Numele sălii' ? '' : val);
+  });
+  els.tvGymName.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); els.tvGymName.blur(); } });
+  els.btnTv.onclick = ()=>{
+    els.tvMode.classList.add('open');
+    renderTvMode();
+  };
+  els.tvExit.onclick = ()=> els.tvMode.classList.remove('open');
 
   /* ---- Istoric ---- */
   function loadHistory(){ return loadJSON('rundeBoxHistory', []); }
