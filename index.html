@@ -664,6 +664,27 @@ h1 span{ color:var(--brass); }
     return audioCtx;
   }
 
+  const bellBuffers = {};
+  function loadBellBuffer(key, url){
+    fetch(url)
+      .then(r => r.arrayBuffer())
+      .then(arr => ensureAudio().decodeAudioData(arr))
+      .then(buf => { bellBuffers[key] = buf; })
+      .catch(()=>{});
+  }
+  loadBellBuffer('short', 'sounds/gong-scurt.mp3');
+  loadBellBuffer('long', 'sounds/gong-lung.mp3');
+
+  function playBellBuffer(key){
+    const buf = bellBuffers[key];
+    if(!buf) return;
+    const ctx = ensureAudio();
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    src.start(0);
+  }
+
   function playGong(){
     if(settings.sport === 'atletism') playWhistle();
     else if(settings.sport === 'hiit') playBuzzer();
@@ -688,19 +709,11 @@ h1 span{ color:var(--brass); }
   }
 
   function playBell(){
-    try{
-      const a = new Audio('sounds/gong-scurt.mp3');
-      a.volume = 1;
-      a.play().catch(()=>{});
-    }catch(e){}
+    playBellBuffer('short');
   }
 
   function playBellFinal(){
-    try{
-      const a = new Audio('sounds/gong-lung.mp3');
-      a.volume = 1;
-      a.play().catch(()=>{});
-    }catch(e){}
+    playBellBuffer('long');
   }
 
   function playWhistle(){
