@@ -1,10 +1,12 @@
-const CACHE = "runde-box-v29";
+const CACHE = "runde-box-v30";
 const ASSETS = [
   "./index.html",
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png",
-  "./icon-512-maskable.png"
+  "./icon-512-maskable.png",
+  "./sounds/gong-scurt.mp3",
+  "./sounds/gong-lung.mp3"
 ];
 
 self.addEventListener("install", (event) => {

@@ -688,46 +688,19 @@ h1 span{ color:var(--brass); }
   }
 
   function playBell(){
-    const ctx = ensureAudio();
-    const now = ctx.currentTime;
-    const master = ctx.createGain();
-    master.gain.setValueAtTime(0.0001, now);
-    master.gain.linearRampToValueAtTime(0.55, now + 0.008);
-    master.gain.exponentialRampToValueAtTime(0.0001, now + 1.95);
-    master.connect(ctx.destination);
+    try{
+      const a = new Audio('sounds/gong-scurt.mp3');
+      a.volume = 1;
+      a.play().catch(()=>{});
+    }catch(e){}
+  }
 
-    // warm classic bell (thinner than a temple gong, rounder than a bright ring bell)
-    const fundamental = 520;
-    const partials = [1, 1.5, 2.0, 2.55, 3.2];
-    partials.forEach((ratio, i) => {
-      const osc = ctx.createOscillator();
-      osc.type = 'sine';
-      osc.frequency.value = fundamental * ratio;
-      const g = ctx.createGain();
-      const amp = 0.8 / (i + 1.2);
-      g.gain.setValueAtTime(amp, now);
-      g.gain.exponentialRampToValueAtTime(0.0005, now + 1.9 - i * 0.15);
-      osc.connect(g).connect(master);
-      osc.start(now);
-      osc.stop(now + 1.95);
-    });
-
-    // soft metallic strike transient
-    const bufSize = ctx.sampleRate * 0.05;
-    const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
-    const data = buf.getChannelData(0);
-    for(let i=0;i<bufSize;i++){ data[i] = (Math.random()*2-1) * (1 - i/bufSize); }
-    const noise = ctx.createBufferSource();
-    noise.buffer = buf;
-    const nf = ctx.createBiquadFilter();
-    nf.type = 'bandpass';
-    nf.frequency.value = 1800;
-    nf.Q.value = 0.7;
-    const ng = ctx.createGain();
-    ng.gain.setValueAtTime(0.32, now);
-    ng.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-    noise.connect(nf).connect(ng).connect(master);
-    noise.start(now);
+  function playBellFinal(){
+    try{
+      const a = new Audio('sounds/gong-lung.mp3');
+      a.volume = 1;
+      a.play().catch(()=>{});
+    }catch(e){}
   }
 
   function playWhistle(){
@@ -1087,7 +1060,8 @@ h1 span{ color:var(--brass); }
     if(state.phase === 'work'){
       if(state.round >= settings.rounds){
         state.phase = 'done'; state.running = false;
-        playGong(); vibrate([250,80,250,80,250]);
+        if(settings.sport === 'box') playBellFinal(); else playGong();
+        vibrate([250,80,250,80,250]);
         flashCard('work'); render();
         saveHistorySession();
         releaseWake();
